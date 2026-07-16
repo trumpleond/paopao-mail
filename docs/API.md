@@ -124,9 +124,13 @@ curl -s http://127.0.0.1:8080/api/stats -H "X-API-Key: your-secret"
 ```json
 {
   "status": "ok",
-  "time": "2026-07-17T12:00:00.000Z"
+  "time": "2026-07-17T12:00:00.000Z",
+  "version": "v1.0.0",
+  "commit": "5c5c0e7"
 }
 ```
+
+`version` / `commit` 由构建时 `-ldflags` 注入；本地 `go run` 多为 `dev` / `none`。
 
 ```bash
 curl -s http://127.0.0.1:8080/health

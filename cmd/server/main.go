@@ -20,6 +20,13 @@ import (
 	"paopao-api/web"
 )
 
+// Injected by -ldflags at build time (CI / release).
+var (
+	version = "dev"
+	commit  = "none"
+	date    = "unknown"
+)
+
 func main() {
 	cfg := config.Load()
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo})))
@@ -43,7 +50,12 @@ func main() {
 	r.Use(requestLog())
 
 	r.GET("/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"status": "ok", "time": time.Now().UTC()})
+		c.JSON(http.StatusOK, gin.H{
+			"status":  "ok",
+			"time":    time.Now().UTC(),
+			"version": version,
+			"commit":  commit,
+		})
 	})
 
 	api := r.Group("/api")
@@ -80,6 +92,9 @@ func main() {
 		uiHint = "http://127.0.0.1" + uiHint + "/"
 	}
 	slog.Info("server starting",
+		"version", version,
+		"commit", commit,
+		"date", date,
 		"addr", cfg.Addr,
 		"db", cfg.DBPath,
 		"upstream", cfg.UpstreamBase,

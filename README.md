@@ -25,6 +25,19 @@ go build -o bin/paopao-api ./cmd/server
 ./bin/paopao-api
 ```
 
+### 多平台构建（CI / 本地）
+
+GitHub Actions 在 push / tag `v*` 时自动交叉编译：
+
+| 平台 | 架构 |
+|------|------|
+| Windows | amd64 (x86_64)、arm64、386 (x86) |
+| Linux | amd64、arm64、386 |
+
+- Actions 产物：仓库 **Actions** 页下载 artifact  
+- 打 tag 发布：`git tag v1.0.0 && git push origin v1.0.0` → 自动创建 **Release** 并附带全部二进制 + sha256  
+- 本地交叉编译：`make dist`（输出到 `dist/`）
+
 默认监听 `:8080`，数据库 `./data/paopao.db`（自动创建）。
 
 浏览器打开 **http://127.0.0.1:8080/** 即可使用本地 Web 管理页（导入 / 取号 / 标记 / 查信 / 账号列表）。
