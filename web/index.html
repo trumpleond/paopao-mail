@@ -1,0 +1,1454 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PaoPao 收信</title>
+  <style>
+    :root {
+      --bg: #0b0d12;
+      --surface: #141820;
+      --surface2: #1a2030;
+      --surface3: #222a3a;
+      --line: #2c3548;
+      --text: #eef2fa;
+      --muted: #8e98ab;
+      --faint: #5c667a;
+      --blue: #4d8dff;
+      --blue2: #3a6fd4;
+      --green: #34d399;
+      --green-bg: #123528;
+      --green-bd: #1f6b4a;
+      --amber: #fbbf24;
+      --amber-bg: #3a2e10;
+      --amber-bd: #7a5f18;
+      --red: #f87171;
+      --red-bg: #3a1a1e;
+      --red-bd: #7a2e38;
+      --radius: 14px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Cascadia Mono", monospace;
+      --sans: "Segoe UI", system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      font-family: var(--sans);
+      color: var(--text);
+      background:
+        radial-gradient(900px 420px at 0% 0%, rgba(77,141,255,.12), transparent 60%),
+        radial-gradient(700px 380px at 100% 10%, rgba(52,211,153,.08), transparent 55%),
+        var(--bg);
+    }
+
+    .topbar {
+      position: sticky; top: 0; z-index: 20;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 16px; padding: 12px 20px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(11,13,18,.88);
+      backdrop-filter: blur(12px);
+    }
+    .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .logo {
+      width: 32px; height: 32px; border-radius: 9px;
+      background: linear-gradient(135deg, var(--blue), #6ee7b7);
+      display: grid; place-items: center;
+      font-weight: 800; font-size: 14px; color: #0b0d12;
+      flex-shrink: 0;
+    }
+    .brand h1 { margin: 0; font-size: 16px; font-weight: 700; }
+    .brand p { margin: 2px 0 0; font-size: 12px; color: var(--muted); }
+    .top-stats { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+    .pill {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 12px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .pill b { color: var(--text); font-weight: 700; margin-left: 4px; }
+
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 16px 16px 56px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+    }
+    .card-hd {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 10px; margin-bottom: 12px;
+    }
+    .card-hd h2 {
+      margin: 0; font-size: 14px; font-weight: 700;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .card-hd .sub { color: var(--muted); font-size: 12px; }
+    .step {
+      width: 22px; height: 22px; border-radius: 7px;
+      background: var(--surface3); color: var(--blue);
+      display: grid; place-items: center;
+      font-size: 12px; font-weight: 800;
+      border: 1px solid var(--line);
+    }
+
+    label.field-label {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      margin: 0 0 6px;
+      font-weight: 500;
+    }
+    input[type="text"], input[type="number"], select, textarea {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--line);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font: inherit;
+      outline: none;
+    }
+    textarea {
+      min-height: 110px;
+      resize: vertical;
+      font-family: var(--mono);
+      font-size: 12.5px;
+      line-height: 1.5;
+    }
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(77,141,255,.16);
+    }
+
+    .field-row {
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+      flex-wrap: wrap;
+    }
+    .field-row .field { flex: 1; min-width: 140px; }
+    .field-row .field.sm { flex: 0 0 80px; min-width: 70px; }
+    .field-row .field.platform { flex: 0 1 220px; min-width: 160px; }
+
+    .btn {
+      position: relative;
+      border: 1px solid var(--line);
+      background: var(--surface2);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 10px 14px;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 650;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: filter .12s ease, transform .08s ease, box-shadow .12s ease, opacity .12s ease;
+      overflow: hidden;
+      user-select: none;
+    }
+    .btn:hover:not(:disabled) { filter: brightness(1.12); }
+    .btn:active:not(:disabled) {
+      transform: translateY(1px) scale(.97);
+      filter: brightness(.95);
+    }
+    .btn:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(77,141,255,.35);
+    }
+    .btn:disabled { opacity: .55; cursor: not-allowed; filter: none; }
+    .btn.loading {
+      opacity: .85;
+      cursor: wait;
+      pointer-events: none;
+    }
+    .btn.loading::after {
+      content: "";
+      width: 14px; height: 14px;
+      margin-left: 8px;
+      border: 2px solid currentColor;
+      border-right-color: transparent;
+      border-radius: 50%;
+      display: inline-block;
+      vertical-align: -2px;
+      animation: spin .7s linear infinite;
+    }
+    .btn.flash {
+      animation: btnFlash .35s ease;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes btnFlash {
+      0% { box-shadow: 0 0 0 0 rgba(77,141,255,.55); }
+      100% { box-shadow: 0 0 0 10px rgba(77,141,255,0); }
+    }
+    .btn-primary {
+      background: linear-gradient(180deg, var(--blue), var(--blue2));
+      border-color: transparent;
+      color: #fff;
+    }
+    .btn-primary:hover:not(:disabled) { filter: brightness(1.08); }
+    .btn-green { background: var(--green-bg); border-color: var(--green-bd); color: var(--green); }
+    .btn-amber { background: var(--amber-bg); border-color: var(--amber-bd); color: var(--amber); }
+    .btn-red { background: var(--red-bg); border-color: var(--red-bd); color: var(--red); }
+    .btn-ghost { background: transparent; }
+    .btn-sm { padding: 7px 10px; font-size: 12px; border-radius: 8px; }
+
+    .checkline {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      user-select: none;
+      color: var(--text);
+      font-size: 13px;
+      line-height: 1.3;
+      white-space: nowrap;
+    }
+    .checkline input {
+      width: 15px; height: 15px;
+      margin: 0;
+      flex-shrink: 0;
+      accent-color: var(--blue);
+    }
+
+    .hint { margin-top: 8px; font-size: 12px; color: var(--faint); line-height: 1.4; }
+    .hint.ok { color: var(--green); }
+    .hint.err { color: var(--red); }
+
+    /* —— compact account strip —— */
+    .account-strip {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--surface2);
+    }
+    .account-strip.empty {
+      color: var(--faint);
+      font-size: 13px;
+      justify-content: center;
+      padding: 14px;
+    }
+    .as-main { min-width: 0; flex: 1 1 260px; }
+    .as-id {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+    .tag {
+      display: inline-flex; align-items: center;
+      padding: 2px 8px; border-radius: 999px;
+      font-size: 11px; border: 1px solid var(--line); color: var(--muted);
+      background: var(--surface);
+    }
+    .tag.id { color: var(--blue); border-color: #35548a; background: #172338; }
+    .as-email {
+      font-size: 16px; font-weight: 700;
+      word-break: break-all;
+      line-height: 1.3;
+    }
+    .as-pass {
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--green);
+      margin-top: 2px;
+      word-break: break-all;
+    }
+    .as-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    /* —— codes —— */
+    .codes-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      margin: 4px 0 12px;
+      min-height: 40px;
+    }
+    .codes-bar .label {
+      font-size: 12px;
+      color: var(--muted);
+      flex-shrink: 0;
+    }
+    .codes {
+      display: flex; flex-wrap: wrap; gap: 8px;
+    }
+    .code-chip {
+      border: 1px solid #3a5280;
+      background: #1c2b48;
+      color: #c9dcff;
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-family: var(--mono);
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      cursor: pointer;
+      transition: transform .08s ease, filter .12s ease, box-shadow .12s ease, background .12s ease, color .12s ease;
+    }
+    .code-chip:hover { filter: brightness(1.12); }
+    .code-chip:active { transform: scale(.96); }
+    .code-chip.copied {
+      border-color: var(--green-bd);
+      background: var(--green-bg);
+      color: var(--green);
+    }
+    .empty-codes { color: var(--faint); font-size: 13px; }
+
+    /* —— mail tabs (single column list) —— */
+    .mail-tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 10px;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 0;
+    }
+    .mail-tab {
+      appearance: none;
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      padding: 10px 14px;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 650;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      transition: color .12s ease, border-color .12s ease, background .12s ease, transform .08s ease;
+    }
+    .mail-tab:hover { color: var(--text); background: rgba(255,255,255,.03); }
+    .mail-tab:active { transform: scale(.98); }
+    .mail-tab.active {
+      color: var(--text);
+      border-bottom-color: var(--blue);
+    }
+    .mail-tab .cnt {
+      display: inline-block;
+      margin-left: 6px;
+      min-width: 18px;
+      padding: 0 6px;
+      border-radius: 999px;
+      background: var(--surface3);
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .mail-tab.active .cnt { color: var(--blue); background: #1a2d52; }
+
+    .mail-list { display: grid; gap: 10px; }
+    .mail {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--surface2);
+      overflow: hidden;
+    }
+    .mail summary {
+      cursor: pointer;
+      padding: 12px 14px;
+      list-style: none;
+    }
+    .mail summary::-webkit-details-marker { display: none; }
+    .mail .sub {
+      font-size: 14px; font-weight: 650;
+      margin-bottom: 4px;
+    }
+    .mail .meta {
+      font-size: 12px; color: var(--faint); font-family: var(--mono);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .mail .body-wrap { border-top: 1px solid var(--line); background: #fff; }
+    .mail .body-toolbar {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 6px 10px;
+      background: var(--surface2);
+      border-bottom: 1px solid var(--line);
+    }
+    .mail .body-frame {
+      display: block;
+      width: 100%;
+      height: 380px;
+      border: 0;
+      background: #fff;
+    }
+    .mail .body-source {
+      display: none;
+      margin: 0;
+      padding: 10px 12px;
+      max-height: 380px;
+      overflow: auto;
+      background: #0d1118;
+      font-size: 12px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: var(--mono);
+      color: #c9d1e0;
+    }
+    .mail.show-source .body-frame { display: none; }
+    .mail.show-source .body-source { display: block; }
+    .mail.show-source .body-wrap { background: #0d1118; }
+    .mail-empty {
+      padding: 36px 12px;
+      text-align: center;
+      color: var(--faint);
+      font-size: 13px;
+      border: 1px dashed var(--line);
+      border-radius: 12px;
+    }
+
+    details.import-box > summary {
+      cursor: pointer;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 14px;
+    }
+    details.import-box > summary::-webkit-details-marker { display: none; }
+    details.import-box > summary .chev {
+      color: var(--muted); font-size: 12px; font-weight: 500;
+    }
+    details.import-box[open] > summary { margin-bottom: 12px; }
+    .import-tools {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .filters {
+      display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end;
+      margin-bottom: 12px;
+    }
+    .filters .field { flex: 1; min-width: 120px; }
+    .table-wrap { overflow: auto; border: 1px solid var(--line); border-radius: 12px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td {
+      text-align: left; padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: middle;
+    }
+    th {
+      background: var(--surface2);
+      color: var(--muted);
+      font-size: 12px; font-weight: 600;
+      position: sticky; top: 0;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,.02); }
+    td.mono { font-family: var(--mono); font-size: 12px; }
+    .status-active { color: var(--green); }
+    .status-disabled { color: var(--red); }
+    .row-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      top: 72px;
+      z-index: 100;
+      max-width: min(480px, calc(100vw - 32px));
+      background: #161d2c;
+      border: 1px solid var(--line);
+      color: var(--text);
+      padding: 12px 18px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      box-shadow: 0 16px 48px rgba(0,0,0,.55);
+      opacity: 0;
+      transform: translate(-50%, -8px);
+      pointer-events: none;
+      transition: .18s ease;
+      white-space: pre-wrap;
+      text-align: center;
+    }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+    .toast.ok {
+      border-color: var(--green-bd);
+      background: linear-gradient(180deg, #153326, #121a24);
+      color: #b7f5d5;
+    }
+    .toast.err {
+      border-color: var(--red-bd);
+      background: linear-gradient(180deg, #3a1a1e, #1a1216);
+      color: #ffc9cd;
+    }
+    .toast.info {
+      border-color: #35548a;
+      background: linear-gradient(180deg, #172338, #121826);
+      color: #c9dcff;
+    }
+
+    /* custom confirm modal */
+    .modal-mask {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      background: rgba(4, 6, 12, .62);
+      backdrop-filter: blur(6px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal-mask.show { display: flex; }
+    .modal {
+      width: min(420px, 100%);
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      box-shadow: 0 24px 64px rgba(0,0,0,.55);
+      padding: 18px 18px 16px;
+      animation: modalIn .16s ease;
+    }
+    @keyframes modalIn {
+      from { opacity: 0; transform: translateY(8px) scale(.98); }
+      to { opacity: 1; transform: none; }
+    }
+    .modal-icon {
+      width: 40px; height: 40px;
+      border-radius: 12px;
+      display: grid; place-items: center;
+      font-size: 18px;
+      font-weight: 800;
+      margin-bottom: 12px;
+    }
+    .modal-icon.warn { background: var(--amber-bg); color: var(--amber); border: 1px solid var(--amber-bd); }
+    .modal-icon.danger { background: var(--red-bg); color: var(--red); border: 1px solid var(--red-bd); }
+    .modal-icon.info { background: #172338; color: var(--blue); border: 1px solid #35548a; }
+    .modal h3 {
+      margin: 0 0 8px;
+      font-size: 16px;
+      font-weight: 700;
+    }
+    .modal .modal-body {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+      white-space: pre-wrap;
+      margin-bottom: 16px;
+    }
+    .modal .modal-email {
+      display: block;
+      margin-top: 8px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: var(--surface2);
+      border: 1px solid var(--line);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 12px;
+      word-break: break-all;
+    }
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+    .modal-actions .btn { min-width: 88px; }
+
+    @media (max-width: 700px) {
+      .topbar { flex-direction: column; align-items: flex-start; }
+      .mail .body-frame, .mail .body-source { height: 300px; max-height: 300px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">P</div>
+      <div>
+        <h1>PaoPao 收信</h1>
+        <p id="headerMeta">本地账号池 · 取号 / 查信 / 标记</p>
+      </div>
+    </div>
+    <div class="top-stats">
+      <div class="pill">总数 <b id="stTotal">-</b></div>
+      <div class="pill">可用 <b id="stActive">-</b></div>
+      <div class="pill">禁用 <b id="stDisabled">-</b></div>
+      <div class="pill" title="各平台已标记数量" id="stMarksPill">标记 <b id="stMarks">-</b></div>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <!-- 1. 取号（全宽紧凑条） -->
+    <section class="card">
+      <div class="card-hd">
+        <h2><span class="step">1</span> 取号</h2>
+        <span class="sub">取号不会自动标记</span>
+      </div>
+      <div class="field-row">
+        <div class="field platform">
+          <label class="field-label" for="platform">平台</label>
+          <input id="platform" type="text" list="platformList" value="" placeholder="输入或选择平台" autocomplete="off" />
+          <datalist id="platformList"></datalist>
+        </div>
+        <button class="btn btn-primary" id="btnPick" style="height:42px">随机取号</button>
+      </div>
+
+      <div id="pickEmpty" class="account-strip empty">
+        选择平台后点「随机取号」，或从下方列表点「选用」
+      </div>
+      <div id="pickPanel" class="account-strip" style="display:none">
+        <div class="as-main">
+          <div class="as-id">
+            <span class="tag id" id="pickId">#-</span>
+            <span class="tag" id="pickPlatformTag">平台: -</span>
+          </div>
+          <div class="as-email" id="pickEmail">-</div>
+          <div class="as-pass" id="pickPass">-</div>
+        </div>
+        <div class="as-actions">
+          <button class="btn btn-sm" id="btnCopyCred">复制账号</button>
+          <button class="btn btn-sm btn-primary" id="btnFetchMail">查信取码</button>
+          <button class="btn btn-sm btn-green" id="btnMark">标记已用</button>
+          <button class="btn btn-sm btn-amber" id="btnUnmark">取消标记</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. 邮件（全宽 + Tab） -->
+    <section class="card">
+      <div class="card-hd">
+        <h2><span class="step">2</span> 邮件 / 验证码</h2>
+        <span class="sub">HTML 渲染预览 · 点击验证码复制</span>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label class="field-label" for="mailQuery">邮箱</label>
+          <input id="mailQuery" type="text" placeholder="取号后自动填入邮箱" />
+        </div>
+        <div class="field sm">
+          <label class="field-label" for="mailNum">条数</label>
+          <input id="mailNum" type="number" value="5" min="1" max="20" />
+        </div>
+        <div class="field sm">
+          <label class="field-label" for="mailBoxType">box</label>
+          <input id="mailBoxType" type="number" value="3" min="1" />
+        </div>
+        <button class="btn btn-primary" id="btnMail" style="height:42px">获取邮件</button>
+      </div>
+
+      <div class="codes-bar">
+        <span class="label">验证码</span>
+        <div id="codesBox" class="empty-codes">获取邮件后显示，点击复制</div>
+      </div>
+
+      <div class="mail-tabs">
+        <button type="button" class="mail-tab active" data-box="inbox" id="tabInbox">
+          收件箱 <span class="cnt" id="inboxCount">0</span>
+        </button>
+        <button type="button" class="mail-tab" data-box="junk" id="tabJunk">
+          垃圾箱 <span class="cnt" id="junkCount">0</span>
+        </button>
+      </div>
+      <div id="inboxList" class="mail-list"><div class="mail-empty">暂无邮件</div></div>
+      <div id="junkList" class="mail-list" style="display:none"><div class="mail-empty">暂无邮件</div></div>
+    </section>
+
+    <!-- 导入 -->
+    <details class="card import-box" id="importDetails">
+      <summary>
+        <span style="display:flex;align-items:center;gap:8px">
+          <span class="step" style="background:transparent;color:var(--muted)">+</span>
+          批量导入账号
+        </span>
+        <span class="chev">点击展开 · 邮箱----密码</span>
+      </summary>
+      <label class="field-label" for="importText">每行一个：邮箱----密码（# 开头为注释）</label>
+      <textarea id="importText" placeholder="user1@outlook.com----pass1&#10;user2@outlook.com----pass2"></textarea>
+      <div class="import-tools">
+        <label class="checkline">
+          <input type="checkbox" id="importOverwrite" />
+          <span>覆盖已存在密码</span>
+        </label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-ghost btn-sm" id="btnLoadMailTxt" type="button">加载 mail.txt</button>
+          <button class="btn btn-primary" id="btnImport">导入到账号池</button>
+        </div>
+      </div>
+      <p class="hint" id="importHint">已存在邮箱默认跳过；勾选覆盖才会更新密码。</p>
+    </details>
+
+    <!-- 列表 -->
+    <section class="card">
+      <div class="card-hd">
+        <h2><span class="step">≡</span> 账号列表</h2>
+        <button class="btn btn-sm" id="btnRefreshList">刷新</button>
+      </div>
+      <div class="filters">
+        <div class="field">
+          <label class="field-label" for="filterStatus">状态</label>
+          <select id="filterStatus">
+            <option value="">全部</option>
+            <option value="active">active</option>
+            <option value="disabled">disabled</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="field-label" for="filterPlatform">平台筛选</label>
+          <input id="filterPlatform" type="text" placeholder="可选 xai" />
+        </div>
+        <div class="field">
+          <label class="field-label" for="filterUnused">仅未用于该平台</label>
+          <select id="filterUnused">
+            <option value="0">否</option>
+            <option value="1">是</option>
+          </select>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:56px">ID</th>
+              <th>邮箱</th>
+              <th>密码</th>
+              <th style="width:88px">状态</th>
+              <th style="width:220px">操作</th>
+            </tr>
+          </thead>
+          <tbody id="accountBody">
+            <tr><td colspan="5" style="color:var(--faint);text-align:center;padding:24px">加载中…</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="hint" id="listHint"></p>
+    </section>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <div class="modal-mask" id="modalMask" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal">
+      <div class="modal-icon warn" id="modalIcon">!</div>
+      <h3 id="modalTitle">确认操作</h3>
+      <div class="modal-body" id="modalBody"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn" id="modalCancel">取消</button>
+        <button type="button" class="btn btn-primary" id="modalOk">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const LS_PLATFORMS = "paopao_platforms";
+    const LS_PLATFORM_LAST = "paopao_platform_last";
+    const DEFAULT_PLATFORMS = ["xai", "openai", "glados", "cursor"];
+
+    let currentPick = null;
+    let platformsKnown = new Set();
+    let activeMailBox = "inbox";
+    let modalResolver = null;
+
+    function loadPlatformsFromStorage() {
+      try {
+        const raw = localStorage.getItem(LS_PLATFORMS);
+        if (raw) {
+          const arr = JSON.parse(raw);
+          if (Array.isArray(arr)) arr.forEach((p) => rememberPlatform(p, false));
+        }
+      } catch { /* ignore */ }
+      DEFAULT_PLATFORMS.forEach((p) => platformsKnown.add(p));
+      try {
+        const last = localStorage.getItem(LS_PLATFORM_LAST);
+        if (last && last.trim()) {
+          $("platform").value = last.trim();
+          rememberPlatform(last, false);
+        } else if (!$("platform").value) {
+          $("platform").value = "xai";
+        }
+      } catch {
+        if (!$("platform").value) $("platform").value = "xai";
+      }
+    }
+
+    function savePlatformsToStorage() {
+      try {
+        localStorage.setItem(LS_PLATFORMS, JSON.stringify([...platformsKnown].sort()));
+      } catch { /* ignore */ }
+    }
+
+    function rememberPlatform(name, persist = true) {
+      const p = String(name || "").trim();
+      if (!p) return;
+      platformsKnown.add(p);
+      if (persist) {
+        try { localStorage.setItem(LS_PLATFORM_LAST, p); } catch { /* ignore */ }
+        savePlatformsToStorage();
+      }
+      renderPlatformList();
+    }
+
+    function toast(msg, type = "ok", ms) {
+      const el = $("toast");
+      el.textContent = msg;
+      el.className = "toast show " + type;
+      clearTimeout(toast._t);
+      const hold = ms ?? (type === "err" ? 3200 : 2200);
+      toast._t = setTimeout(() => { el.className = "toast"; }, hold);
+    }
+
+    /**
+     * Custom confirm (no system dialog).
+     * opts: { title, message, email?, okText?, cancelText?, danger?, tone?: 'warn'|'danger'|'info' }
+     */
+    function askConfirm(opts) {
+      const o = typeof opts === "string" ? { message: opts } : (opts || {});
+      const mask = $("modalMask");
+      const icon = $("modalIcon");
+      const title = $("modalTitle");
+      const body = $("modalBody");
+      const ok = $("modalOk");
+      const cancel = $("modalCancel");
+
+      title.textContent = o.title || "确认操作";
+      const tone = o.tone || (o.danger ? "danger" : "warn");
+      icon.className = "modal-icon " + tone;
+      icon.textContent = tone === "danger" ? "×" : tone === "info" ? "i" : "!";
+
+      let html = esc(o.message || "");
+      if (o.email) {
+        html += `<span class="modal-email">${esc(o.email)}</span>`;
+      }
+      body.innerHTML = html;
+
+      ok.textContent = o.okText || "确定";
+      cancel.textContent = o.cancelText || "取消";
+      ok.className = "btn " + (o.danger ? "btn-red" : "btn-primary");
+
+      mask.classList.add("show");
+      ok.focus();
+
+      return new Promise((resolve) => {
+        if (modalResolver) {
+          // previous pending → cancel
+          modalResolver(false);
+        }
+        modalResolver = resolve;
+
+        const close = (val) => {
+          mask.classList.remove("show");
+          ok.onclick = null;
+          cancel.onclick = null;
+          mask.onclick = null;
+          document.removeEventListener("keydown", onKey);
+          modalResolver = null;
+          resolve(val);
+        };
+        const onKey = (e) => {
+          if (e.key === "Escape") close(false);
+          if (e.key === "Enter") close(true);
+        };
+        ok.onclick = () => close(true);
+        cancel.onclick = () => close(false);
+        mask.onclick = (e) => { if (e.target === mask) close(false); };
+        document.addEventListener("keydown", onKey);
+      });
+    }
+
+    /** Instant press feedback + optional loading text while async runs. */
+    async function withBtn(btn, work, loadingText) {
+      if (!btn) return work();
+      if (btn.dataset.busy === "1") return;
+      const original = btn.textContent;
+      btn.dataset.busy = "1";
+      btn.classList.add("flash", "loading");
+      btn.disabled = true;
+      if (loadingText) btn.textContent = loadingText;
+      try {
+        return await work();
+      } finally {
+        btn.disabled = false;
+        btn.classList.remove("loading", "flash");
+        btn.textContent = original;
+        btn.dataset.busy = "0";
+      }
+    }
+
+    function flashBtn(btn) {
+      if (!btn) return;
+      btn.classList.remove("flash");
+      // reflow to restart animation
+      void btn.offsetWidth;
+      btn.classList.add("flash");
+      setTimeout(() => btn.classList.remove("flash"), 400);
+    }
+
+    function esc(s) {
+      return String(s ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;");
+    }
+
+    async function api(path, opts = {}) {
+      const headers = { ...(opts.headers || {}) };
+      if (opts.body && !headers["Content-Type"] && !(opts.body instanceof FormData)) {
+        headers["Content-Type"] = "application/json";
+      }
+      const res = await fetch(path, { ...opts, headers });
+      let data;
+      try { data = await res.json(); }
+      catch { throw new Error("非 JSON 响应 HTTP " + res.status); }
+      if (!res.ok || (data.code !== undefined && data.code !== 0)) {
+        const err = new Error(data.message || ("HTTP " + res.status));
+        err.code = data.code;
+        err.httpStatus = res.status;
+        err.payload = data.data;
+        throw err;
+      }
+      return data.data;
+    }
+
+    function renderPlatformList() {
+      const dl = $("platformList");
+      if (!dl) return;
+      const cur = ($("platform") && $("platform").value.trim()) || "";
+      // last used first, then alphabetical
+      const all = [...platformsKnown];
+      all.sort((a, b) => {
+        if (a === cur) return -1;
+        if (b === cur) return 1;
+        return a.localeCompare(b);
+      });
+      dl.innerHTML = "";
+      all.forEach((p) => {
+        const o = document.createElement("option");
+        o.value = p;
+        dl.appendChild(o);
+      });
+      // also sync filter platform datalist if present
+      const filterInput = $("filterPlatform");
+      if (filterInput) {
+        filterInput.setAttribute("list", "platformList");
+      }
+    }
+
+    async function refreshStats() {
+      const st = await api("/api/stats");
+      $("stTotal").textContent = st.total;
+      $("stActive").textContent = st.active;
+      $("stDisabled").textContent = st.disabled;
+      const marks = st.platform_marks || {};
+      const keys = Object.keys(marks);
+      keys.forEach((k) => rememberPlatform(k, false));
+      savePlatformsToStorage();
+      renderPlatformList();
+      if (!keys.length) {
+        $("stMarks").textContent = "无";
+        $("stMarksPill").title = "暂无平台标记";
+      } else {
+        $("stMarks").textContent = keys.map((k) => k + ":" + marks[k]).join(" ");
+        $("stMarksPill").title = keys.map((k) => k + " = " + marks[k]).join("\n");
+      }
+    }
+
+    function showPick(p, platform) {
+      currentPick = p;
+      if (!p) {
+        $("pickEmpty").style.display = "flex";
+        $("pickPanel").style.display = "none";
+        return;
+      }
+      $("pickEmpty").style.display = "none";
+      $("pickPanel").style.display = "flex";
+      $("pickId").textContent = "#" + p.id;
+      $("pickEmail").textContent = p.email;
+      $("pickPass").textContent = p.password;
+      const plat = platform || $("platform").value.trim() || "-";
+      $("pickPlatformTag").textContent = "平台: " + plat;
+      $("mailQuery").value = p.email || "";
+    }
+
+    async function doImport(btn) {
+      const text = $("importText").value;
+      if (!text.trim()) return toast("请粘贴账号列表", "err");
+      await withBtn(btn, async () => {
+        toast("正在导入…", "info", 1200);
+        const overwrite = $("importOverwrite").checked;
+        const url = "/api/accounts/import" + (overwrite ? "?overwrite=1" : "");
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain; charset=utf-8" },
+          body: text,
+        });
+        const data = await res.json();
+        if (!res.ok || data.code !== 0) throw new Error(data.message || "导入失败");
+        const r = data.data;
+        const hint = $("importHint");
+        hint.className = "hint ok";
+        hint.textContent = `完成 total=${r.total} · 新增 ${r.inserted} · 跳过 ${r.skipped} · 更新 ${r.updated} · 无效 ${r.invalid}`;
+        toast(`导入完成：新增 ${r.inserted} · 跳过 ${r.skipped}`, "ok");
+        await refreshStats();
+        await refreshList();
+      }, "导入中…");
+    }
+
+    async function tryLoadMailTxt(btn) {
+      await withBtn(btn, async () => {
+        toast("正在加载 mail.txt…", "info", 1000);
+        const res = await fetch("/mail.txt");
+        if (!res.ok) throw new Error("找不到 mail.txt");
+        $("importText").value = await res.text();
+        $("importDetails").open = true;
+        toast("已加载 mail.txt，确认后点导入", "ok");
+      }, "加载中…");
+    }
+
+    async function doPick(btn) {
+      const platform = $("platform").value.trim();
+      if (!platform) return toast("请填写平台名", "err");
+      rememberPlatform(platform);
+      await withBtn(btn, async () => {
+        toast("正在取号…", "info", 1000);
+        const p = await api("/api/accounts/pick", {
+          method: "POST",
+          body: JSON.stringify({ platform }),
+        });
+        showPick(p, platform);
+        toast("已取号 #" + p.id + " · " + p.email, "ok");
+      }, "取号中…");
+    }
+
+    async function doMark(unmark = false, btn) {
+      if (!currentPick) return toast("请先取号或选用账号", "err");
+      const platform = $("platform").value.trim();
+      if (!platform) return toast("请填写平台名", "err");
+      rememberPlatform(platform);
+      await withBtn(btn, async () => {
+        toast(unmark ? "正在取消标记…" : "正在标记…", "info", 1000);
+        const path = unmark
+          ? `/api/accounts/${currentPick.id}/unmark`
+          : `/api/accounts/${currentPick.id}/mark`;
+        await api(path, { method: "POST", body: JSON.stringify({ platform }) });
+        toast(unmark ? "已取消标记 · " + platform : "已标记用于 " + platform, "ok");
+        await refreshStats();
+        await refreshList();
+      }, unmark ? "取消中…" : "标记中…");
+    }
+
+    async function copyCred(btn) {
+      if (!currentPick) return toast("请先取号或选用账号", "err");
+      flashBtn(btn);
+      const text = currentPick.credential || (currentPick.email + "----" + currentPick.password);
+      try {
+        await navigator.clipboard.writeText(text);
+        toast("已复制账号：" + currentPick.email, "ok");
+      } catch {
+        // fallback
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        ta.remove();
+        toast("已复制账号：" + currentPick.email, "ok");
+      }
+    }
+
+    function buildMailUrl(q, num, boxType) {
+      const params = new URLSearchParams();
+      params.set("num", String(num || 5));
+      params.set("boxType", String(boxType || 3));
+      q = (q || "").trim();
+      if (/^\d+$/.test(q)) params.set("account_id", q);
+      else params.set("email", q);
+      return "/api/emails?" + params.toString();
+    }
+
+    function looksLikeHTML(s) {
+      if (!s) return false;
+      const t = s.trim().slice(0, 500).toLowerCase();
+      return t.includes("<html") || t.includes("<!doctype") || t.includes("<body") ||
+        t.includes("<div") || t.includes("<table") || t.includes("<p") || t.includes("<br");
+    }
+
+    function fillMailFrame(iframe, html) {
+      const doc = `<!DOCTYPE html><html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<base target="_blank" rel="noopener">
+<style>
+  html,body{margin:0;padding:0;background:#fff;color:#111;}
+  body{padding:16px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"PingFang SC","Microsoft YaHei",sans-serif;font-size:14px;line-height:1.55;word-break:break-word;}
+  img{max-width:100%;height:auto;}
+  a{color:#0867ec;}
+  table{max-width:100% !important;}
+</style></head><body>${html}</body></html>`;
+      try { iframe.srcdoc = doc; } catch { iframe.src = "about:blank"; }
+    }
+
+    function renderMails(list, el) {
+      if (!list || !list.length) {
+        el.innerHTML = '<div class="mail-empty">空</div>';
+        return;
+      }
+      el.innerHTML = "";
+      const items = [];
+      list.forEach((m, idx) => {
+        const sub = esc(m.Subject || "(无主题)");
+        const meta = esc((m.Date || "") + "  " + (m.From || ""));
+        const raw = m.Body || "";
+        const isHTML = looksLikeHTML(raw);
+
+        const details = document.createElement("details");
+        details.className = "mail";
+        details.name = "mail-accordion-" + (el.id || "list"); // same name: native exclusive open (supported browsers)
+        if (idx === 0) details.open = true;
+
+        details.innerHTML = `
+          <summary>
+            <div class="sub">${sub}</div>
+            <div class="meta">${meta}</div>
+          </summary>
+          <div class="body-wrap">
+            <div class="body-toolbar">
+              <button type="button" class="btn btn-sm btn-toggle-source">${isHTML ? "查看源码" : "纯文本"}</button>
+            </div>
+            <iframe class="body-frame" sandbox="allow-popups allow-popups-to-escape-sandbox" referrerpolicy="no-referrer" title="mail-body"></iframe>
+            <pre class="body-source"></pre>
+          </div>`;
+
+        const frame = details.querySelector(".body-frame");
+        const source = details.querySelector(".body-source");
+        const toggle = details.querySelector(".btn-toggle-source");
+        source.textContent = raw;
+
+        if (isHTML) {
+          fillMailFrame(frame, raw);
+        } else {
+          fillMailFrame(frame, `<pre style="white-space:pre-wrap;margin:0;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px">${esc(raw)}</pre>`);
+          toggle.style.display = "none";
+        }
+
+        toggle.onclick = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          flashBtn(toggle);
+          const showSrc = !details.classList.contains("show-source");
+          details.classList.toggle("show-source", showSrc);
+          toggle.textContent = showSrc ? "渲染预览" : "查看源码";
+          toast(showSrc ? "已切换到源码" : "已切换到渲染预览", "info", 1200);
+        };
+
+        // accordion: opening one closes siblings
+        details.addEventListener("toggle", () => {
+          if (details.open) {
+            items.forEach((other) => {
+              if (other !== details && other.open) other.open = false;
+            });
+            if (isHTML && !frame.dataset.filled) {
+              fillMailFrame(frame, raw);
+              frame.dataset.filled = "1";
+            }
+          }
+        });
+        if (details.open) frame.dataset.filled = "1";
+
+        items.push(details);
+        el.appendChild(details);
+      });
+    }
+
+    function setMailTab(box, fromClick) {
+      activeMailBox = box;
+      document.querySelectorAll(".mail-tab").forEach((t) => {
+        t.classList.toggle("active", t.dataset.box === box);
+      });
+      $("inboxList").style.display = box === "inbox" ? "grid" : "none";
+      $("junkList").style.display = box === "junk" ? "grid" : "none";
+      if (fromClick) {
+        toast(box === "inbox" ? "已切换到收件箱" : "已切换到垃圾箱", "info", 1000);
+      }
+    }
+
+    async function doMail(preferPick = false, btn) {
+      let q = $("mailQuery").value;
+      if (preferPick && currentPick) q = currentPick.email || String(currentPick.id);
+      if (!String(q).trim()) return toast("请填写邮箱", "err");
+      const num = Number($("mailNum").value) || 5;
+      const boxType = Number($("mailBoxType").value) || 3;
+      const run = async () => {
+        toast("正在获取邮件…", "info", 1500);
+        let data;
+        try {
+          data = await api(buildMailUrl(q, num, boxType));
+        } catch (e) {
+          // upstream 201: 未找到授权 → 后端已自动禁用
+          if (e.code === 201 || (e.payload && e.payload.auto_disabled)) {
+            const em = (e.payload && e.payload.email) || q;
+            const id = e.payload && e.payload.account_id;
+            toast(
+              (e.payload && e.payload.auto_disabled
+                ? "未找到授权，已自动禁用"
+                : "未找到授权") +
+              (id ? " #" + id : "") +
+              (em ? " · " + em : ""),
+              "err",
+              4500
+            );
+            if (currentPick && (
+              (id && currentPick.id === id) ||
+              (em && currentPick.email === em)
+            )) {
+              // keep panel but user can pick next
+            }
+            await refreshStats().catch(() => {});
+            await refreshList().catch(() => {});
+            return;
+          }
+          throw e;
+        }
+        const codes = data.codes || [];
+        const box = $("codesBox");
+        if (codes.length) {
+          box.className = "codes";
+          box.innerHTML = codes.map((c) =>
+            `<button type="button" class="code-chip" data-code="${esc(c)}" title="点击复制">${esc(c)}</button>`
+          ).join("");
+          box.querySelectorAll(".code-chip").forEach((chip) => {
+            chip.onclick = async () => {
+              flashBtn(chip);
+              try {
+                await navigator.clipboard.writeText(chip.dataset.code);
+              } catch {
+                const ta = document.createElement("textarea");
+                ta.value = chip.dataset.code;
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand("copy");
+                ta.remove();
+              }
+              chip.classList.add("copied");
+              setTimeout(() => chip.classList.remove("copied"), 800);
+              toast("已复制验证码 " + chip.dataset.code, "ok");
+            };
+          });
+        } else {
+          box.className = "empty-codes";
+          box.textContent = "未自动提取到验证码，请展开邮件正文查看";
+        }
+
+        const inbox = data.inbox || [];
+        const junk = data.junk || [];
+        $("inboxCount").textContent = String(inbox.length);
+        $("junkCount").textContent = String(junk.length);
+        renderMails(inbox, $("inboxList"));
+        renderMails(junk, $("junkList"));
+
+        if (activeMailBox === "inbox" && !inbox.length && junk.length) setMailTab("junk");
+        else if (activeMailBox === "junk" && !junk.length && inbox.length) setMailTab("inbox");
+        else setMailTab(activeMailBox);
+
+        toast(`邮件已刷新 · 收件箱 ${inbox.length} · 垃圾箱 ${junk.length}` +
+          (codes.length ? ` · 验证码 ${codes.length} 个` : ""), "ok");
+      };
+      if (btn) await withBtn(btn, run, "获取中…");
+      else await run();
+    }
+
+    async function refreshList() {
+      const status = $("filterStatus").value;
+      const platform = $("filterPlatform").value.trim();
+      const unused = $("filterUnused").value;
+      const qs = new URLSearchParams({ page: "1", page_size: "100" });
+      if (status) qs.set("status", status);
+      if (platform) {
+        qs.set("platform", platform);
+        if (unused === "1") qs.set("unused", "1");
+      }
+      const data = await api("/api/accounts?" + qs.toString());
+      const items = data.items || [];
+      $("listHint").textContent = `共 ${data.total} 条 · 当前显示 ${items.length}`;
+      const tb = $("accountBody");
+      if (!items.length) {
+        tb.innerHTML = '<tr><td colspan="5" style="color:var(--faint);text-align:center;padding:24px">暂无账号，请先导入</td></tr>';
+        return;
+      }
+      tb.innerHTML = items.map((a) => {
+        const stClass = a.status === "active" ? "status-active" : "status-disabled";
+        return `<tr>
+          <td>${a.id}</td>
+          <td>${esc(a.email)}</td>
+          <td class="mono">${esc(a.password)}</td>
+          <td class="${stClass}">${esc(a.status)}</td>
+          <td>
+            <div class="row-actions">
+              <button class="btn btn-sm" data-act="use" data-id="${a.id}" data-email="${esc(a.email)}" data-password="${esc(a.password)}">选用</button>
+              <button class="btn btn-sm btn-primary" data-act="mail" data-id="${a.id}">查信</button>
+              <button class="btn btn-sm btn-amber" data-act="toggle" data-id="${a.id}" data-status="${a.status}" data-email="${esc(a.email)}">${a.status === "active" ? "禁用" : "启用"}</button>
+              <button class="btn btn-sm btn-red" data-act="del" data-id="${a.id}" data-email="${esc(a.email)}">删</button>
+            </div>
+          </td>
+        </tr>`;
+      }).join("");
+
+      tb.querySelectorAll("button[data-act]").forEach((btn) => {
+        btn.onclick = async () => {
+          const id = Number(btn.dataset.id);
+          const act = btn.dataset.act;
+          try {
+            if (act === "use") {
+              flashBtn(btn);
+              showPick({
+                id,
+                email: btn.dataset.email,
+                password: btn.dataset.password,
+                credential: btn.dataset.email + "----" + btn.dataset.password,
+              }, $("platform").value.trim());
+              toast("已选用 #" + id + " · " + btn.dataset.email, "ok");
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            } else if (act === "mail") {
+              const rowEmail = btn.closest("tr")?.querySelector("td:nth-child(2)")?.textContent?.trim();
+              $("mailQuery").value = rowEmail || String(id);
+              await doMail(false, btn);
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            } else if (act === "toggle") {
+              const next = btn.dataset.status === "active" ? "disabled" : "active";
+              const email = btn.dataset.email
+                || btn.closest("tr")?.querySelector("td:nth-child(2)")?.textContent?.trim()
+                || "";
+              const label = next === "disabled" ? "禁用" : "启用";
+              const ok = await askConfirm({
+                title: next === "disabled" ? "确认禁用" : "确认启用",
+                message: next === "disabled"
+                  ? `禁用账号 #${id}？\n禁用后不会再被随机取号，之后可再启用。`
+                  : `启用账号 #${id}？\n启用后可重新进入取号池。`,
+                email,
+                okText: label,
+                tone: next === "disabled" ? "warn" : "info",
+              });
+              if (!ok) {
+                toast("已取消" + label, "info", 1200);
+                return;
+              }
+              await withBtn(btn, async () => {
+                toast(next === "disabled" ? "正在禁用…" : "正在启用…", "info", 1000);
+                await api("/api/accounts/" + id, {
+                  method: "PATCH",
+                  body: JSON.stringify({ status: next }),
+                });
+                toast(next === "disabled" ? "已禁用 #" + id : "已启用 #" + id, "ok");
+                await refreshStats();
+                await refreshList();
+              }, next === "disabled" ? "禁用中…" : "启用中…");
+            } else if (act === "del") {
+              const email = btn.dataset.email
+                || btn.closest("tr")?.querySelector("td:nth-child(2)")?.textContent?.trim()
+                || "";
+              const ok = await askConfirm({
+                title: "确认删除",
+                message: `删除账号 #${id}？\n删除后不可恢复（含平台标记）。`,
+                email,
+                okText: "删除",
+                danger: true,
+                tone: "danger",
+              });
+              if (!ok) {
+                toast("已取消删除", "info", 1200);
+                return;
+              }
+              await withBtn(btn, async () => {
+                toast("正在删除…", "info", 1000);
+                await api("/api/accounts/" + id, { method: "DELETE" });
+                toast("已删除 #" + id, "ok");
+                if (currentPick && currentPick.id === id) showPick(null);
+                await refreshStats();
+                await refreshList();
+              }, "删除中…");
+            }
+          } catch (e) {
+            toast(e.message || String(e), "err");
+          }
+        };
+      });
+    }
+
+    function bind() {
+      $("btnImport").onclick = (e) => doImport(e.currentTarget).catch((err) => toast(err.message, "err"));
+      $("btnLoadMailTxt").onclick = (e) => tryLoadMailTxt(e.currentTarget).catch((err) => toast(err.message, "err"));
+      $("btnPick").onclick = (e) => doPick(e.currentTarget).catch((err) => toast(err.message, "err"));
+      $("btnMark").onclick = (e) => doMark(false, e.currentTarget).catch((err) => toast(err.message, "err"));
+      $("btnUnmark").onclick = (e) => doMark(true, e.currentTarget).catch((err) => toast(err.message, "err"));
+      $("btnCopyCred").onclick = (e) => copyCred(e.currentTarget).catch((err) => toast(err.message, "err"));
+      $("btnFetchMail").onclick = (e) => doMail(true, e.currentTarget).catch((err) => toast(err.message, "err"));
+      $("btnMail").onclick = (e) => doMail(false, e.currentTarget).catch((err) => toast(err.message, "err"));
+      $("btnRefreshList").onclick = (e) => {
+        withBtn(e.currentTarget, async () => {
+          toast("正在刷新列表…", "info", 1000);
+          await refreshList();
+          toast("列表已刷新", "ok");
+        }, "刷新中…").catch((err) => toast(err.message, "err"));
+      };
+      document.querySelectorAll(".mail-tab").forEach((t) => {
+        t.onclick = () => {
+          flashBtn(t);
+          setMailTab(t.dataset.box, true);
+        };
+      });
+      ["filterStatus", "filterPlatform", "filterUnused"].forEach((id) => {
+        $(id).addEventListener("change", () => {
+          toast("正在筛选…", "info", 800);
+          refreshList()
+            .then(() => toast("筛选完成", "ok", 1200))
+            .catch((e) => toast(e.message, "err"));
+        });
+      });
+      const platInput = $("platform");
+      platInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") $("btnPick").click();
+      });
+      platInput.addEventListener("change", () => {
+        rememberPlatform(platInput.value);
+      });
+      platInput.addEventListener("blur", () => {
+        if (platInput.value.trim()) rememberPlatform(platInput.value);
+      });
+      $("mailQuery").addEventListener("keydown", (e) => {
+        if (e.key === "Enter") $("btnMail").click();
+      });
+    }
+
+    bind();
+    loadPlatformsFromStorage();
+    renderPlatformList();
+    (async () => {
+      try {
+        $("headerMeta").textContent = "本地 · " + location.origin;
+        await refreshStats();
+        await refreshList();
+      } catch (e) {
+        toast("初始化失败: " + e.message, "err");
+      }
+    })();
+  </script>
+</body>
+</html>

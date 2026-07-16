@@ -1,0 +1,14 @@
+/bin/
+/data/
+*.db
+*.db-journal
+*.exe
+.env
+.idea/
+.vscode/
+*.log
+
+# local credential dumps — never commit
+mail.txt
+*.csv
+accounts.txt
