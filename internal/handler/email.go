@@ -35,7 +35,7 @@ func (h *EmailHandler) GetEmails(c *gin.Context) {
 
 	email := c.Query("email")
 	password := c.Query("password")
-	num, _ := strconv.Atoi(c.DefaultQuery("num", "2"))
+	num, _ := strconv.Atoi(c.DefaultQuery("num", "5"))
 	boxType, _ := strconv.Atoi(c.DefaultQuery("boxType", c.DefaultQuery("box_type", "3")))
 
 	cred, err := h.svc.ResolveCredential(accountID, email, password)

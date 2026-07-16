@@ -44,17 +44,26 @@ GitHub Actions 在 push / tag `v*` 时自动交叉编译：
 
 **完整 HTTP API 文档（脚本/二次调用）：** 见 [docs/API.md](docs/API.md)。
 
-### 环境变量
+### 环境变量 / `.env`
+
+启动时自动读取项目根目录（或可执行文件旁）的 **`.env`**，**不会覆盖**已在系统里 export 的变量。
+
+```bash
+cp .env.example .env
+# 编辑 .env，例如设置 API_KEY=your-secret
+go run ./cmd/server
+```
 
 | 变量 | 默认 | 说明 |
 |------|------|------|
 | `ADDR` | `:8080` | 监听地址 |
-| `API_KEY` | 空 | 非空则要求 `X-API-Key` 或 `Authorization: Bearer` |
+| `API_KEY` | 空 | 非空则 API 与 Web 共用该 Key；网页弹出登录窗，请求自动带 `X-API-Key` |
 | `DB_PATH` | `./data/paopao.db` | SQLite 路径 |
 | `UPSTREAM_BASE` | `https://query.paopaodw.com` | 上游收信服务 |
 | `UPSTREAM_TIMEOUT_SEC` | `30` | 上游超时（秒） |
 
-示例见 `configs/config.example.env`。
+- 模板：`.env.example`（可提交）  
+- 本地文件：`.env`（已在 `.gitignore`，勿提交密钥）
 
 ---
 

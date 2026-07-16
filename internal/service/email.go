@@ -163,7 +163,7 @@ func (s *EmailService) GetLastEmails(ctx context.Context, cred *ResolvedCred, nu
 		return nil, fmt.Errorf("%w: credential required", store.ErrInvalidInput)
 	}
 	if num <= 0 {
-		num = 2
+		num = 5
 	}
 	if boxType <= 0 {
 		boxType = 3
@@ -254,6 +254,8 @@ func (s *EmailService) GetLastEmails(ctx context.Context, cred *ResolvedCred, nu
 			var raw any
 			_ = json.Unmarshal(up.Data, &raw)
 			result.Raw = raw
+			result.Inbox = []MailItem{}
+			result.Junk = []MailItem{}
 		} else {
 			if md.Inbox == nil {
 				md.Inbox = []MailItem{}

@@ -57,10 +57,10 @@
 
 ## 2. 鉴权
 
-环境变量 `API_KEY`：
+环境变量 `API_KEY`（**API 与 Web 管理页共用同一把 Key**）：
 
-- **空（默认）**：不校验，本地自用即可  
-- **非空**：`/api/*` 必须带以下之一  
+- **空（默认）**：不校验，本地自用即可；打开网页可直接使用  
+- **非空**：`/api/*` 必须带 Key；网页会弹出 **API Key 登录** 窗口  
 
 ```http
 X-API-Key: <your-key>
@@ -72,6 +72,18 @@ X-API-Key: <your-key>
 Authorization: Bearer <your-key>
 ```
 
+### Web 前端行为
+
+| 场景 | 行为 |
+|------|------|
+| 服务端未设 `API_KEY` | 无登录窗，顶部显示「鉴权 · 关闭」 |
+| 服务端设了 `API_KEY` | 首次打开弹出登录；Key 存 `localStorage`（`paopao_api_key`） |
+| 登录后 | 所有 `fetch` 自动带 `X-API-Key` |
+| 401 / Key 失效 | 再次弹出登录 |
+| 退出 | 清除本地 Key，重新要求登录 |
+
+页面 HTML（`GET /`）本身仍可匿名访问；保护的是 API 数据。
+
 示例：
 
 ```bash
@@ -80,7 +92,17 @@ curl -s http://127.0.0.1:8080/api/stats -H "X-API-Key: your-secret"
 
 ---
 
-## 3. 环境变量
+## 3. 环境变量 / `.env`
+
+进程启动时会加载 **`.env`**（当前工作目录或可执行文件同目录），格式：
+
+```env
+KEY=value
+# 注释
+export API_KEY=secret
+```
+
+已存在的系统环境变量**优先**，不会被 `.env` 覆盖。模板见仓库根目录 `.env.example`。
 
 | 变量 | 默认 | 说明 |
 |------|------|------|
@@ -468,10 +490,12 @@ GET {UPSTREAM_BASE}/api/GetLastEmails
 | `account_id` | 三选一 | — | 池内 id，自动拼密码 |
 | `email` | 三选一 | — | 纯邮箱（库中有则补密码）或完整 `邮箱----密码` |
 | `password` | 可选 | — | 与纯邮箱联用 |
-| `num` | 否 | 2 | 拉取条数 |
+| `num` | 否 | 5 | 拉取最近条数 |
 | `boxType` / `box_type` | 否 | 3 | 与上游一致 |
 
 解析优先级：`account_id` > 完整 credential 字符串 > `email+password` > 库内按 email 查。
+
+> 邮件本身**不分页**（上游只支持最近 N 封）。**账号列表**才分页，见 `GET /api/accounts`。
 
 #### 成功 `data`
 
@@ -499,6 +523,10 @@ GET {UPSTREAM_BASE}/api/GetLastEmails
 | `codes` | 从主题/正文尽量提取的验证码（可能不全） |
 | `account_id` / `email` | 若能关联到池内账号则返回 |
 | `raw` | 上游 data 结构异常时保留原始 JSON |
+
+```bash
+curl -s "http://127.0.0.1:8080/api/emails?account_id=42&num=5&boxType=3"
+```
 
 #### 上游 201：未找到授权 → 自动禁用
 

@@ -28,8 +28,16 @@ var (
 )
 
 func main() {
-	cfg := config.Load()
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo})))
+
+	// Load .env from cwd / executable dir (does not override existing env vars)
+	if path, err := config.LoadDotEnv(""); err != nil {
+		slog.Warn("load .env failed", "err", err)
+	} else if path != "" {
+		slog.Info("loaded env file", "path", path)
+	}
+
+	cfg := config.Load()
 
 	database, err := db.Open(cfg.DBPath)
 	if err != nil {

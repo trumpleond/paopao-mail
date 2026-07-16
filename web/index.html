@@ -69,6 +69,60 @@
       white-space: nowrap;
     }
     .pill b { color: var(--text); font-weight: 700; margin-left: 4px; }
+    .pill.auth-ok { border-color: var(--green-bd); color: var(--green); }
+    .pill.auth-need { border-color: var(--amber-bd); color: var(--amber); }
+    .pill.auth-off { border-color: var(--line); color: var(--faint); }
+    .top-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+
+    /* login gate */
+    .login-gate {
+      position: fixed;
+      inset: 0;
+      z-index: 300;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background:
+        radial-gradient(900px 420px at 0% 0%, rgba(77,141,255,.14), transparent 60%),
+        radial-gradient(700px 380px at 100% 10%, rgba(52,211,153,.08), transparent 55%),
+        rgba(8, 10, 14, .92);
+      backdrop-filter: blur(10px);
+    }
+    .login-gate.show { display: flex; }
+    .login-card {
+      width: min(400px, 100%);
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 22px 20px 18px;
+      box-shadow: 0 24px 64px rgba(0,0,0,.5);
+    }
+    .login-card .login-brand {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 16px;
+    }
+    .login-card h2 { margin: 0; font-size: 18px; }
+    .login-card .login-desc {
+      margin: 0 0 16px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .login-card .field-label { margin-top: 4px; }
+    .login-card .login-actions {
+      display: flex; gap: 10px; margin-top: 14px;
+    }
+    .login-card .login-actions .btn { flex: 1; }
+    .login-error {
+      display: none;
+      margin-top: 10px;
+      color: var(--red);
+      font-size: 12px;
+    }
+    .login-error.show { display: block; }
+    body.locked .wrap,
+    body.locked .top-stats { filter: blur(2px); pointer-events: none; user-select: none; }
 
     .wrap {
       max-width: 1100px;
@@ -416,6 +470,33 @@
       border: 1px dashed var(--line);
       border-radius: 12px;
     }
+    .pager {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--line);
+    }
+    .pager .pager-info {
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .pager .pager-btns {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .pager .page-num {
+      min-width: 88px;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 650;
+      color: var(--text);
+    }
 
     details.import-box > summary {
       cursor: pointer;
@@ -587,15 +668,44 @@
         <p id="headerMeta">本地账号池 · 取号 / 查信 / 标记</p>
       </div>
     </div>
-    <div class="top-stats">
-      <div class="pill">总数 <b id="stTotal">-</b></div>
-      <div class="pill">可用 <b id="stActive">-</b></div>
-      <div class="pill">禁用 <b id="stDisabled">-</b></div>
-      <div class="pill" title="各平台已标记数量" id="stMarksPill">标记 <b id="stMarks">-</b></div>
+    <div class="top-right">
+      <div class="top-stats">
+        <div class="pill">总数 <b id="stTotal">-</b></div>
+        <div class="pill">可用 <b id="stActive">-</b></div>
+        <div class="pill">禁用 <b id="stDisabled">-</b></div>
+        <div class="pill" title="各平台已标记数量" id="stMarksPill">标记 <b id="stMarks">-</b></div>
+      </div>
+      <div class="pill auth-off" id="authPill" title="API 鉴权状态">鉴权 · -</div>
+      <button type="button" class="btn btn-sm" id="btnAuth" style="display:none">登录</button>
+      <button type="button" class="btn btn-sm btn-amber" id="btnLogout" style="display:none">退出</button>
     </div>
   </header>
 
-  <div class="wrap">
+  <!-- API Key login (same key as server API_KEY) -->
+  <div class="login-gate" id="loginGate" aria-hidden="true">
+    <div class="login-card">
+      <div class="login-brand">
+        <div class="logo">P</div>
+        <div>
+          <h2>API Key 登录</h2>
+          <p class="login-desc" style="margin:2px 0 0;font-size:12px">与服务端 <code>API_KEY</code> 相同</p>
+        </div>
+      </div>
+      <p class="login-desc">服务端已启用鉴权。请输入 API Key，将保存在本浏览器，请求时自动附带 <code>X-API-Key</code>。</p>
+      <label class="field-label" for="loginKey">API Key</label>
+      <input id="loginKey" type="password" placeholder="粘贴 API_KEY" autocomplete="current-password" />
+      <label class="checkline" style="margin-top:10px">
+        <input type="checkbox" id="loginShowKey" />
+        <span>显示密钥</span>
+      </label>
+      <div class="login-error" id="loginError"></div>
+      <div class="login-actions">
+        <button type="button" class="btn btn-primary" id="btnLogin">进入</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap" id="appWrap">
     <!-- 1. 取号（全宽紧凑条） -->
     <section class="card">
       <div class="card-hd">
@@ -646,7 +756,7 @@
         </div>
         <div class="field sm">
           <label class="field-label" for="mailNum">条数</label>
-          <input id="mailNum" type="number" value="5" min="1" max="20" />
+          <input id="mailNum" type="number" value="5" min="1" max="50" title="拉取最近 N 封" />
         </div>
         <div class="field sm">
           <label class="field-label" for="mailBoxType">box</label>
@@ -739,7 +849,21 @@
           </tbody>
         </table>
       </div>
-      <p class="hint" id="listHint"></p>
+      <div class="pager" id="accountPager">
+        <div class="pager-info" id="listHint">—</div>
+        <div class="pager-btns">
+          <button type="button" class="btn btn-sm" id="btnListFirst">首页</button>
+          <button type="button" class="btn btn-sm" id="btnListPrev">上一页</button>
+          <span class="page-num" id="listPageLabel">1 / 1</span>
+          <button type="button" class="btn btn-sm" id="btnListNext">下一页</button>
+          <button type="button" class="btn btn-sm" id="btnListLast">末页</button>
+          <select id="listPageSize" class="btn btn-sm" style="padding:7px 8px;min-width:auto" title="每页条数">
+            <option value="20">20/页</option>
+            <option value="50" selected>50/页</option>
+            <option value="100">100/页</option>
+          </select>
+        </div>
+      </div>
     </section>
   </div>
 
@@ -761,12 +885,184 @@
     const $ = (id) => document.getElementById(id);
     const LS_PLATFORMS = "paopao_platforms";
     const LS_PLATFORM_LAST = "paopao_platform_last";
+    const LS_API_KEY = "paopao_api_key";
     const DEFAULT_PLATFORMS = ["xai", "openai", "glados", "cursor"];
 
     let currentPick = null;
     let platformsKnown = new Set();
     let activeMailBox = "inbox";
     let modalResolver = null;
+    /** null=unknown, false=server has no API_KEY, true=server requires key */
+    let authRequired = null;
+    let sessionReady = false;
+    // account list pagination
+    let listPage = 1;
+    let listPageSize = 50;
+    let listTotal = 0;
+
+    function getApiKey() {
+      try { return (localStorage.getItem(LS_API_KEY) || "").trim(); }
+      catch { return ""; }
+    }
+    function setApiKey(key) {
+      key = String(key || "").trim();
+      try {
+        if (key) localStorage.setItem(LS_API_KEY, key);
+        else localStorage.removeItem(LS_API_KEY);
+      } catch { /* ignore */ }
+      updateAuthUI();
+    }
+    function clearApiKey() {
+      setApiKey("");
+    }
+
+    function updateAuthUI() {
+      const pill = $("authPill");
+      const btnAuth = $("btnAuth");
+      const btnLogout = $("btnLogout");
+      const key = getApiKey();
+      if (authRequired === false) {
+        pill.textContent = "鉴权 · 关闭";
+        pill.className = "pill auth-off";
+        pill.title = "服务端未设置 API_KEY，无需登录";
+        btnAuth.style.display = "none";
+        btnLogout.style.display = "none";
+      } else if (authRequired === true && key) {
+        pill.textContent = "鉴权 · 已登录";
+        pill.className = "pill auth-ok";
+        pill.title = "已使用本地保存的 API Key";
+        btnAuth.style.display = "none";
+        btnLogout.style.display = "";
+      } else if (authRequired === true) {
+        pill.textContent = "鉴权 · 未登录";
+        pill.className = "pill auth-need";
+        pill.title = "需要 API Key";
+        btnAuth.style.display = "";
+        btnLogout.style.display = "none";
+      } else {
+        pill.textContent = "鉴权 · …";
+        pill.className = "pill auth-off";
+        btnAuth.style.display = "none";
+        btnLogout.style.display = "none";
+      }
+    }
+
+    function showLoginGate(msg) {
+      const gate = $("loginGate");
+      gate.classList.add("show");
+      gate.setAttribute("aria-hidden", "false");
+      document.body.classList.add("locked");
+      const err = $("loginError");
+      if (msg) {
+        err.textContent = msg;
+        err.classList.add("show");
+      } else {
+        err.textContent = "";
+        err.classList.remove("show");
+      }
+      $("loginKey").value = getApiKey();
+      setTimeout(() => $("loginKey").focus(), 50);
+      updateAuthUI();
+    }
+
+    function hideLoginGate() {
+      const gate = $("loginGate");
+      gate.classList.remove("show");
+      gate.setAttribute("aria-hidden", "true");
+      document.body.classList.remove("locked");
+      $("loginError").classList.remove("show");
+      updateAuthUI();
+    }
+
+    async function probeAuth() {
+      // 1) try without key
+      let res = await fetch("/api/stats", { headers: { Accept: "application/json" } });
+      if (res.status === 401) {
+        authRequired = true;
+        // 2) try with stored key
+        const key = getApiKey();
+        if (key) {
+          res = await fetch("/api/stats", {
+            headers: { Accept: "application/json", "X-API-Key": key },
+          });
+          if (res.ok) {
+            let data;
+            try { data = await res.json(); } catch { data = null; }
+            if (data && data.code === 0) {
+              sessionReady = true;
+              updateAuthUI();
+              return true;
+            }
+          }
+          // bad key
+          clearApiKey();
+          showLoginGate("API Key 无效，请重新输入");
+          updateAuthUI();
+          return false;
+        }
+        showLoginGate();
+        updateAuthUI();
+        return false;
+      }
+      if (res.ok) {
+        authRequired = false;
+        sessionReady = true;
+        // optional: clear unused key
+        updateAuthUI();
+        return true;
+      }
+      // other errors — still try to proceed, may fail later
+      authRequired = null;
+      sessionReady = true;
+      updateAuthUI();
+      return true;
+    }
+
+    async function doLogin() {
+      const key = $("loginKey").value.trim();
+      const err = $("loginError");
+      if (!key) {
+        err.textContent = "请输入 API Key";
+        err.classList.add("show");
+        return;
+      }
+      const btn = $("btnLogin");
+      await withBtn(btn, async () => {
+        const res = await fetch("/api/stats", {
+          headers: { Accept: "application/json", "X-API-Key": key },
+        });
+        let data = null;
+        try { data = await res.json(); } catch { /* ignore */ }
+        if (res.status === 401 || (data && data.code === 401)) {
+          err.textContent = "API Key 错误";
+          err.classList.add("show");
+          throw new Error("unauthorized");
+        }
+        if (!res.ok || !data || data.code !== 0) {
+          err.textContent = (data && data.message) || ("HTTP " + res.status);
+          err.classList.add("show");
+          throw new Error(err.textContent);
+        }
+        setApiKey(key);
+        authRequired = true;
+        sessionReady = true;
+        hideLoginGate();
+        toast("登录成功", "ok");
+        await refreshStats();
+        await refreshList();
+      }, "验证中…");
+    }
+
+    function doLogout() {
+      clearApiKey();
+      sessionReady = false;
+      if (authRequired) {
+        showLoginGate("已退出，请重新输入 API Key");
+        toast("已退出登录", "info");
+      } else {
+        toast("服务端未启用鉴权", "info");
+      }
+    }
 
     function loadPlatformsFromStorage() {
       try {
@@ -910,8 +1206,15 @@
         .replaceAll('"', "&quot;");
     }
 
+    function authHeaders(extra = {}) {
+      const headers = { Accept: "application/json", ...extra };
+      const key = getApiKey();
+      if (key) headers["X-API-Key"] = key;
+      return headers;
+    }
+
     async function api(path, opts = {}) {
-      const headers = { ...(opts.headers || {}) };
+      const headers = authHeaders({ ...(opts.headers || {}) });
       if (opts.body && !headers["Content-Type"] && !(opts.body instanceof FormData)) {
         headers["Content-Type"] = "application/json";
       }
@@ -919,6 +1222,15 @@
       let data;
       try { data = await res.json(); }
       catch { throw new Error("非 JSON 响应 HTTP " + res.status); }
+      if (res.status === 401 || data.code === 401) {
+        authRequired = true;
+        sessionReady = false;
+        showLoginGate("未授权或 Key 已失效，请重新登录");
+        const err = new Error(data.message || "unauthorized");
+        err.code = 401;
+        err.httpStatus = 401;
+        throw err;
+      }
       if (!res.ok || (data.code !== undefined && data.code !== 0)) {
         const err = new Error(data.message || ("HTTP " + res.status));
         err.code = data.code;
@@ -998,10 +1310,15 @@
         const url = "/api/accounts/import" + (overwrite ? "?overwrite=1" : "");
         const res = await fetch(url, {
           method: "POST",
-          headers: { "Content-Type": "text/plain; charset=utf-8" },
+          headers: authHeaders({ "Content-Type": "text/plain; charset=utf-8" }),
           body: text,
         });
         const data = await res.json();
+        if (res.status === 401 || data.code === 401) {
+          authRequired = true;
+          showLoginGate("未授权，请重新登录");
+          throw new Error("unauthorized");
+        }
         if (!res.ok || data.code !== 0) throw new Error(data.message || "导入失败");
         const r = data.data;
         const hint = $("importHint");
@@ -1083,6 +1400,25 @@
       if (/^\d+$/.test(q)) params.set("account_id", q);
       else params.set("email", q);
       return "/api/emails?" + params.toString();
+    }
+
+    function listTotalPages() {
+      if (listPageSize <= 0) return 0;
+      if (listTotal <= 0) return 0;
+      return Math.ceil(listTotal / listPageSize);
+    }
+
+    function updateListPager() {
+      const pages = listTotalPages();
+      const page = Math.max(1, listPage);
+      $("listPageLabel").textContent = pages > 0 ? `${page} / ${pages}` : `${page}`;
+      $("btnListFirst").disabled = page <= 1;
+      $("btnListPrev").disabled = page <= 1;
+      $("btnListNext").disabled = pages <= 0 || page >= pages;
+      $("btnListLast").disabled = pages <= 0 || page >= pages;
+      if ($("listPageSize").value !== String(listPageSize)) {
+        $("listPageSize").value = String(listPageSize);
+      }
     }
 
     function looksLikeHTML(s) {
@@ -1215,12 +1551,6 @@
               "err",
               4500
             );
-            if (currentPick && (
-              (id && currentPick.id === id) ||
-              (em && currentPick.email === em)
-            )) {
-              // keep panel but user can pick next
-            }
             await refreshStats().catch(() => {});
             await refreshList().catch(() => {});
             return;
@@ -1275,11 +1605,18 @@
       else await run();
     }
 
-    async function refreshList() {
+    async function refreshList(opts = {}) {
+      if (opts.resetPage) listPage = 1;
+      if (opts.page) listPage = Math.max(1, Number(opts.page) || 1);
+      listPageSize = Math.min(500, Math.max(1, Number($("listPageSize").value) || listPageSize || 50));
+
       const status = $("filterStatus").value;
       const platform = $("filterPlatform").value.trim();
       const unused = $("filterUnused").value;
-      const qs = new URLSearchParams({ page: "1", page_size: "100" });
+      const qs = new URLSearchParams({
+        page: String(listPage),
+        page_size: String(listPageSize),
+      });
       if (status) qs.set("status", status);
       if (platform) {
         qs.set("platform", platform);
@@ -1287,7 +1624,17 @@
       }
       const data = await api("/api/accounts?" + qs.toString());
       const items = data.items || [];
-      $("listHint").textContent = `共 ${data.total} 条 · 当前显示 ${items.length}`;
+      listTotal = Number(data.total) || 0;
+      // clamp page if filters shrank the result set
+      const pages = listTotalPages();
+      if (pages > 0 && listPage > pages) {
+        listPage = pages;
+        return refreshList({ page: listPage });
+      }
+      $("listHint").textContent = listTotal
+        ? `共 ${listTotal} 条 · 第 ${listPage}/${Math.max(pages, 1)} 页 · 本页 ${items.length} 条`
+        : "共 0 条";
+      updateListPager();
       const tb = $("accountBody");
       if (!items.length) {
         tb.innerHTML = '<tr><td colspan="5" style="color:var(--faint);text-align:center;padding:24px">暂无账号，请先导入</td></tr>';
@@ -1393,21 +1740,69 @@
     }
 
     function bind() {
-      $("btnImport").onclick = (e) => doImport(e.currentTarget).catch((err) => toast(err.message, "err"));
+      $("btnImport").onclick = (e) => doImport(e.currentTarget).catch((err) => {
+        if (err.message !== "unauthorized") toast(err.message, "err");
+      });
       $("btnLoadMailTxt").onclick = (e) => tryLoadMailTxt(e.currentTarget).catch((err) => toast(err.message, "err"));
-      $("btnPick").onclick = (e) => doPick(e.currentTarget).catch((err) => toast(err.message, "err"));
-      $("btnMark").onclick = (e) => doMark(false, e.currentTarget).catch((err) => toast(err.message, "err"));
-      $("btnUnmark").onclick = (e) => doMark(true, e.currentTarget).catch((err) => toast(err.message, "err"));
+      $("btnPick").onclick = (e) => doPick(e.currentTarget).catch((err) => {
+        if (err.message !== "unauthorized") toast(err.message, "err");
+      });
+      $("btnMark").onclick = (e) => doMark(false, e.currentTarget).catch((err) => {
+        if (err.message !== "unauthorized") toast(err.message, "err");
+      });
+      $("btnUnmark").onclick = (e) => doMark(true, e.currentTarget).catch((err) => {
+        if (err.message !== "unauthorized") toast(err.message, "err");
+      });
       $("btnCopyCred").onclick = (e) => copyCred(e.currentTarget).catch((err) => toast(err.message, "err"));
-      $("btnFetchMail").onclick = (e) => doMail(true, e.currentTarget).catch((err) => toast(err.message, "err"));
-      $("btnMail").onclick = (e) => doMail(false, e.currentTarget).catch((err) => toast(err.message, "err"));
+      $("btnFetchMail").onclick = (e) => doMail(true, e.currentTarget).catch((err) => {
+        if (err.message !== "unauthorized") toast(err.message, "err");
+      });
+      $("btnMail").onclick = (e) => doMail(false, e.currentTarget).catch((err) => {
+        if (err.message !== "unauthorized") toast(err.message, "err");
+      });
       $("btnRefreshList").onclick = (e) => {
         withBtn(e.currentTarget, async () => {
           toast("正在刷新列表…", "info", 1000);
           await refreshList();
           toast("列表已刷新", "ok");
-        }, "刷新中…").catch((err) => toast(err.message, "err"));
+        }, "刷新中…").catch((err) => {
+          if (err.message !== "unauthorized") toast(err.message, "err");
+        });
       };
+      $("btnListFirst").onclick = () => refreshList({ page: 1 }).catch((e) => {
+        if (e.message !== "unauthorized") toast(e.message, "err");
+      });
+      $("btnListPrev").onclick = () => refreshList({ page: Math.max(1, listPage - 1) }).catch((e) => {
+        if (e.message !== "unauthorized") toast(e.message, "err");
+      });
+      $("btnListNext").onclick = () => {
+        const pages = listTotalPages();
+        if (pages > 0 && listPage >= pages) return toast("已经是最后一页", "info");
+        refreshList({ page: listPage + 1 }).catch((e) => {
+          if (e.message !== "unauthorized") toast(e.message, "err");
+        });
+      };
+      $("btnListLast").onclick = () => {
+        const pages = Math.max(1, listTotalPages());
+        refreshList({ page: pages }).catch((e) => {
+          if (e.message !== "unauthorized") toast(e.message, "err");
+        });
+      };
+      $("listPageSize").addEventListener("change", () => {
+        listPageSize = Number($("listPageSize").value) || 50;
+        refreshList({ resetPage: true }).catch((e) => {
+          if (e.message !== "unauthorized") toast(e.message, "err");
+        });
+      });
+      $("btnLogin").onclick = () => doLogin().catch(() => { /* error shown in gate */ });
+      $("btnAuth").onclick = () => showLoginGate();
+      $("btnLogout").onclick = () => doLogout();
+      $("loginShowKey").onchange = () => {
+        $("loginKey").type = $("loginShowKey").checked ? "text" : "password";
+      };
+      $("loginKey").addEventListener("keydown", (e) => {
+        if (e.key === "Enter") $("btnLogin").click();
+      });
       document.querySelectorAll(".mail-tab").forEach((t) => {
         t.onclick = () => {
           flashBtn(t);
@@ -1417,9 +1812,11 @@
       ["filterStatus", "filterPlatform", "filterUnused"].forEach((id) => {
         $(id).addEventListener("change", () => {
           toast("正在筛选…", "info", 800);
-          refreshList()
+          refreshList({ resetPage: true })
             .then(() => toast("筛选完成", "ok", 1200))
-            .catch((e) => toast(e.message, "err"));
+            .catch((e) => {
+              if (e.message !== "unauthorized") toast(e.message, "err");
+            });
         });
       });
       const platInput = $("platform");
@@ -1440,13 +1837,16 @@
     bind();
     loadPlatformsFromStorage();
     renderPlatformList();
+    updateAuthUI();
     (async () => {
       try {
         $("headerMeta").textContent = "本地 · " + location.origin;
+        const ok = await probeAuth();
+        if (!ok) return; // waiting for login
         await refreshStats();
         await refreshList();
       } catch (e) {
-        toast("初始化失败: " + e.message, "err");
+        if (e.message !== "unauthorized") toast("初始化失败: " + e.message, "err");
       }
     })();
   </script>

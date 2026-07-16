@@ -4,7 +4,11 @@
 *.db
 *.db-journal
 *.exe
+# local secrets — keep .env.example tracked
 .env
+.env.local
+.env.*.local
+!.env.example
 .idea/
 .vscode/
 *.log
