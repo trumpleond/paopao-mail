@@ -1,14 +1,21 @@
-# Run prebuilt image from GitHub Container Registry (no local build)
+# 使用 GHCR 已构建镜像部署（无需本地 build）
 #
-# Public package (default after first publish if you set visibility public):
+# 镜像: ghcr.io/trumpleond/paopao-api  (Public)
+# 标签: latest | 1.0.2 | 1.0 | master | sha-...
+#
+# 快速启动:
+#   cp .env.example .env          # 可选：API_KEY / HOST_PORT
 #   docker compose -f docker-compose.ghcr.yml pull
 #   docker compose -f docker-compose.ghcr.yml up -d
+#   浏览器 http://127.0.0.1:8080/
 #
-# Private package — login first:
-#   echo YOUR_GITHUB_TOKEN | docker login ghcr.io -u YOUR_GITHUB_USER --password-stdin
+# 指定版本:
+#   IMAGE_TAG=1.0.2 docker compose -f docker-compose.ghcr.yml up -d
 #
-# Override tag:
-#   IMAGE_TAG=v1.0.2 docker compose -f docker-compose.ghcr.yml up -d
+# 私有包时先登录:
+#   echo YOUR_TOKEN | docker login ghcr.io -u trumpleond --password-stdin
+#
+# 详见 docs/GHCR.md
 
 services:
   paopao-api:
