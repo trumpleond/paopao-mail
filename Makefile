@@ -1,8 +1,9 @@
-.PHONY: run build tidy test dist
+.PHONY: run build tidy test dist docker-up docker-down docker-build
 
 APP=paopao-api
 VERSION?=$(shell git rev-parse --short HEAD 2>/dev/null || echo dev)
-LDFLAGS=-s -w -X main.version=$(VERSION) -X main.commit=$(shell git rev-parse --short HEAD 2>/dev/null || echo none)
+COMMIT?=$(shell git rev-parse --short HEAD 2>/dev/null || echo none)
+LDFLAGS=-s -w -X main.version=$(VERSION) -X main.commit=$(COMMIT)
 
 run:
 	go run ./cmd/server
@@ -20,6 +21,15 @@ dist:
 	CGO_ENABLED=0 GOOS=linux   GOARCH=386   go build -trimpath -ldflags="$(LDFLAGS)" -o dist/$(APP)-linux-386 ./cmd/server
 	CGO_ENABLED=0 GOOS=windows GOARCH=386   go build -trimpath -ldflags="$(LDFLAGS)" -o dist/$(APP)-windows-386.exe ./cmd/server
 	@echo "built:" && ls -la dist/
+
+docker-build:
+	docker compose build --build-arg VERSION=$(VERSION) --build-arg COMMIT=$(COMMIT)
+
+docker-up:
+	docker compose up -d --build
+
+docker-down:
+	docker compose down
 
 tidy:
 	go mod tidy

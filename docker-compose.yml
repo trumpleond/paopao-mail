@@ -1,0 +1,48 @@
+# paopao-api — local build
+#
+# 1. cp .env.example .env   # set API_KEY etc.
+# 2. docker compose up -d --build
+# 3. open http://127.0.0.1:8080/
+#
+# Prefer prebuilt image from GHCR? use docker-compose.ghcr.yml (see docs/GHCR.md)
+# Data (SQLite) is stored in the named volume `paopao-data`.
+
+services:
+  paopao-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VERSION: ${VERSION:-local}
+        COMMIT: ${COMMIT:-unknown}
+        DATE: ${DATE:-unknown}
+    image: paopao-api:${IMAGE_TAG:-local}
+    container_name: paopao-api
+    ports:
+      - "${HOST_PORT:-8080}:8080"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      # Force container paths / listen address (override .env host-oriented values)
+      ADDR: ":8080"
+      DB_PATH: /data/paopao.db
+      # Optional: pass through from host env / .env
+      API_KEY: ${API_KEY:-}
+      UPSTREAM_BASE: ${UPSTREAM_BASE:-https://query.paopaodw.com}
+      UPSTREAM_TIMEOUT_SEC: ${UPSTREAM_TIMEOUT_SEC:-30}
+    volumes:
+      - paopao-data:/data
+      # Optional: hot-edit web UI without rebuild
+      # - ./web:/app/web:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  paopao-data:
+    name: paopao-data

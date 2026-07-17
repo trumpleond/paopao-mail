@@ -25,6 +25,44 @@ go build -o bin/paopao-api ./cmd/server
 ./bin/paopao-api
 ```
 
+### Docker Compose（本地构建）
+
+```bash
+cp .env.example .env   # 按需设置 API_KEY
+docker compose up -d --build
+# 浏览器: http://127.0.0.1:8080/
+```
+
+| 项 | 说明 |
+|----|------|
+| 端口 | 默认 `8080`，可用 `.env` 里 `HOST_PORT` 改映射 |
+| 数据 | 命名卷 `paopao-data` → 容器内 `/data/paopao.db` |
+| 配置 | `.env` 中的 `API_KEY` / `UPSTREAM_*` 会注入容器 |
+| 日志 | `docker compose logs -f` |
+| 停止 | `docker compose down`（保留数据卷） |
+| 清数据 | `docker compose down -v` |
+
+### 从 GHCR 拉取镜像（推荐自己部署）
+
+完整步骤见 **[docs/GHCR.md](docs/GHCR.md)**。摘要：
+
+1. 推送 `master` 或 tag `v*`，Actions **Docker** 任务会推到  
+   `ghcr.io/trumpleond/paopao-api`
+2. 首次成功后，在 GitHub **Packages** 里把 `paopao-api` 设为 **Public**（可选）
+3. 服务器上：
+
+```bash
+docker compose -f docker-compose.ghcr.yml pull
+docker compose -f docker-compose.ghcr.yml up -d
+```
+
+仅本地构建镜像：
+
+```bash
+docker build -t paopao-api:local .
+docker run --rm -p 8080:8080 -v paopao-data:/data -e API_KEY= -e DB_PATH=/data/paopao.db paopao-api:local
+```
+
 ### 多平台构建（CI / 本地）
 
 GitHub Actions 在 push / tag `v*` 时自动交叉编译：
@@ -231,6 +269,8 @@ internal/middleware/ API Key
 web/                 本地管理页
 docs/API.md          HTTP API 文档
 configs/             示例配置
+Dockerfile           多阶段镜像构建
+docker-compose.yml   一键部署
 ```
 
 ## 说明

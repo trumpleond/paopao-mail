@@ -1,0 +1,92 @@
+name: Docker
+
+on:
+  push:
+    branches: [master, main]
+    tags: ["v*"]
+  workflow_dispatch:
+
+# GITHUB_TOKEN can push packages when packages:write is granted
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  # ghcr.io/<owner>/<image> — lowercase required by GHCR
+  IMAGE_NAME: ${{ github.repository_owner }}/paopao-api
+
+jobs:
+  docker:
+    name: Build & Push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Image name (lowercase)
+        run: |
+          OWNER_LC="$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')"
+          echo "IMAGE=${{ env.REGISTRY }}/${OWNER_LC}/paopao-api" >> "$GITHUB_ENV"
+          echo "Will push: ${{ env.REGISTRY }}/${OWNER_LC}/paopao-api"
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker metadata (tags & labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,prefix=sha-,format=short
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=ref,event=branch
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            VERSION=${{ github.ref_type == 'tag' && github.ref_name || github.sha }}
+            COMMIT=${{ github.sha }}
+            DATE=${{ github.event.head_commit.timestamp || github.event.repository.updated_at }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Summary
+        run: |
+          {
+            echo "## GHCR image"
+            echo ""
+            echo "\`\`\`"
+            echo "${IMAGE}"
+            echo "\`\`\`"
+            echo ""
+            echo "Tags:"
+            echo "\`\`\`"
+            echo "${{ steps.meta.outputs.tags }}"
+            echo "\`\`\`"
+            echo ""
+            echo "Pull example:"
+            echo "\`\`\`bash"
+            echo "docker pull ${IMAGE}:latest"
+            echo "\`\`\`"
+          } >> "$GITHUB_STEP_SUMMARY"
